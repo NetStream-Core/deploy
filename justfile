@@ -30,5 +30,22 @@ demo: up
     sleep 30
     python3 tools/seed.py
 
+lab-agent AGENT_DIR="../agent":
+    mkdir -p lab/gateway/artifacts
+    cp {{AGENT_DIR}}/target/release/network-monitor-agent lab/gateway/artifacts/
+    cp {{AGENT_DIR}}/bpf/prog.bpf.o lab/gateway/artifacts/
+
+lab-up:
+    docker compose -f compose.yml -f lab/compose.lab.yml up -d --build kafka kafka-init clickhouse migrate otel-edge otel-gateway gateway victim attacker client
+
+lab-down:
+    docker compose -f compose.yml -f lab/compose.lab.yml down -v
+
+lab-run *ARGS:
+    ./lab/run.sh {{ARGS}}
+
 e2e:
     ./tests/e2e/run.sh
+
+lab-e2e:
+    ./tests/lab/run.sh

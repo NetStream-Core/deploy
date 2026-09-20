@@ -100,8 +100,8 @@ hit_record() {
 echo "== starting the stack"
 compose up -d >/dev/null 2>&1 || { echo "docker compose up failed"; compose logs --tail 30; exit 1; }
 
-tables=$(eventually 120 "ch \"SELECT count() FROM system.tables WHERE database = 'netstream' AND name IN ('otel_logs','flows','dns_queries','blocklist_hits','flows_1m','schema_migrations')\"" 6)
-check "migrations created all tables" "$tables" 6
+tables=$(eventually 120 "ch \"SELECT count() FROM system.tables WHERE database = 'netstream' AND name IN ('otel_logs','flows','dns_queries','blocklist_hits','flows_1m','schema_migrations','labels')\"" 7)
+check "migrations created all tables" "$tables" 7
 check "gateway is running" "$(eventually 60 "compose ps --status running --services | grep -c '^otel-gateway$'" 1)" 1
 check "edge collector is running" "$(eventually 60 "compose ps --status running --services | grep -c '^otel-edge$'" 1)" 1
 sleep 5
@@ -130,8 +130,8 @@ check "raw staging table holds the three records" \
     "$(ch "SELECT count() FROM otel_logs WHERE ResourceAttributes['host.id'] = 'e2e-host'")" 3
 
 echo "== migrations are idempotent"
-rerun=$(compose run --rm migrate 2>&1)
-check "second run skips every migration" "$(echo "$rerun" | grep -c '^skipping')" 5
+rerun=$(compose run --rm -T migrate 2>&1)
+check "second run skips every migration" "$(echo "$rerun" | grep -c '^skipping')" "$(ls clickhouse/migrations/*.sql | wc -l)"
 check "second run applies nothing" "$(echo "$rerun" | grep -c '^applying')" 0
 
 echo "== Kafka buffers data while the gateway is down"

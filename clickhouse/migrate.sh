@@ -13,7 +13,7 @@ for file in /migrations/*.sql; do
     if [ "$applied" = "0" ]; then
         echo "applying $version"
         client --multiquery <"$file"
-        client --query "INSERT INTO schema_migrations (version) VALUES ('$version')"
+        client --query "INSERT INTO schema_migrations (version) VALUES ('$version')" </dev/null
     else
         echo "skipping $version, already applied"
     fi
