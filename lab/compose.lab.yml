@@ -1,0 +1,91 @@
+services:
+  gateway:
+    build:
+      context: ./lab/gateway
+    image: netstream-lab-gateway
+    privileged: true
+    sysctls:
+      net.ipv4.ip_forward: 1
+    depends_on:
+      otel-edge:
+        condition: service_started
+    environment:
+      LAN_IP: 10.10.0.2
+      HOST_ID: lab-gateway
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-edge:4317
+      BPF_OBJECT_FILE: /usr/local/lib/netstream/prog.bpf.o
+      MALWARE_DOMAINS_FILE: /etc/netstream/blocklist.txt
+      HEALTH_HOST: 0.0.0.0
+      RESPONSE_MODE: ${LAB_RESPONSE_MODE:-monitor}
+      REPORT_INTERVAL_MS: 1000
+      RUST_LOG: ${LAB_AGENT_LOG:-info}
+    volumes:
+      - ./lab/gateway/blocklist.txt:/etc/netstream/blocklist.txt:ro
+    networks:
+      default: {}
+      lan:
+        ipv4_address: 10.10.0.2
+      dmz:
+        ipv4_address: 10.20.0.2
+    mem_limit: 200m
+
+  victim:
+    build:
+      context: ./lab/victim
+    image: netstream-lab-victim
+    cap_add:
+      - NET_ADMIN
+    environment:
+      ROUTE_TO: 10.10.0.0/24
+      GATEWAY: 10.20.0.2
+      SELF_IP: 10.20.0.10
+    networks:
+      dmz:
+        ipv4_address: 10.20.0.10
+    mem_limit: 150m
+
+  attacker:
+    build:
+      context: ./lab/tools
+    image: netstream-lab-tools
+    cap_add:
+      - NET_ADMIN
+    command: ["sleep", "infinity"]
+    environment:
+      ROUTE_TO: 10.20.0.0/24
+      GATEWAY: 10.10.0.2
+    networks:
+      lan:
+        ipv4_address: 10.10.0.10
+    mem_limit: 150m
+
+  client:
+    build:
+      context: ./lab/tools
+    image: netstream-lab-tools
+    depends_on:
+      attacker:
+        condition: service_started
+    cap_add:
+      - NET_ADMIN
+    working_dir: /lab
+    command: ["python3", "/lab/benign.py"]
+    environment:
+      ROUTE_TO: 10.20.0.0/24
+      GATEWAY: 10.10.0.2
+    networks:
+      lan:
+        ipv4_address: 10.10.0.20
+    mem_limit: 100m
+
+networks:
+  lan:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.0.0/24
+  dmz:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.20.0.0/24
