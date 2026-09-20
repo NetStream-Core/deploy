@@ -23,5 +23,12 @@ validate:
     docker run --rm -v "$PWD/collector/edge.yaml:/cfg.yaml:ro" otel/opentelemetry-collector-contrib:0.161.0 validate --config /cfg.yaml
     docker run --rm -v "$PWD/collector/gateway.yaml:/cfg.yaml:ro" -e CLICKHOUSE_DB=x -e CLICKHOUSE_USER=x -e CLICKHOUSE_PASSWORD=x otel/opentelemetry-collector-contrib:0.161.0 validate --config /cfg.yaml
 
+seed *ARGS:
+    python3 tools/seed.py {{ARGS}}
+
+demo: up
+    sleep 30
+    python3 tools/seed.py
+
 e2e:
     ./tests/e2e/run.sh

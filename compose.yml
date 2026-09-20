@@ -32,6 +32,7 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_LOG_DIRS: /var/lib/kafka/data
       KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_MESSAGE_MAX_BYTES: 4194304
       KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
       KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
     volumes:
@@ -59,7 +60,7 @@ services:
         for topic in netstream.events.v1 netstream.metrics.v1; do
           kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists \
             --topic "$$topic" --partitions 3 --replication-factor 1 \
-            --config retention.ms=604800000
+            --config retention.ms=604800000 --config max.message.bytes=4194304
         done
     logging: *logging
 
@@ -132,6 +133,31 @@ services:
     mem_limit: 300m
     logging: *logging
 
+  grafana:
+    image: grafana/grafana:12.4.11
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    environment:
+      <<: *clickhouse-env
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-netstream-dev}
+      GF_PLUGINS_PREINSTALL_SYNC: grafana-clickhouse-datasource@4.21.3
+      GF_AUTH_ANONYMOUS_ENABLED: ${GRAFANA_ANONYMOUS:-false}
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    mem_limit: 500m
+    logging: *logging
+
   kafka-ui:
     image: provectuslabs/kafka-ui:v0.7.2
     profiles: [debug]
@@ -149,3 +175,4 @@ services:
 volumes:
   kafka-data:
   clickhouse-data:
+  grafana-data:
