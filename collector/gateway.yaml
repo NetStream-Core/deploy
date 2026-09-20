@@ -1,0 +1,47 @@
+receivers:
+  kafka:
+    brokers:
+      - kafka:29092
+    group_id: netstream-gateway
+    initial_offset: earliest
+    logs:
+      topics:
+        - netstream.events.v1
+      encoding: otlp_proto
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 192
+    spike_limit_mib: 48
+  batch:
+    send_batch_size: 8192
+    timeout: 1s
+
+exporters:
+  clickhouse:
+    endpoint: tcp://clickhouse:9000
+    database: ${env:CLICKHOUSE_DB}
+    username: ${env:CLICKHOUSE_USER}
+    password: ${env:CLICKHOUSE_PASSWORD}
+    create_schema: false
+    logs_table_name: otel_logs
+    timeout: 10s
+    sending_queue:
+      enabled: true
+      queue_size: 10000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+service:
+  telemetry:
+    logs:
+      level: info
+  pipelines:
+    logs:
+      receivers: [kafka]
+      processors: [memory_limiter, batch]
+      exporters: [clickhouse]
