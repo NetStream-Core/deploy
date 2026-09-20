@@ -25,6 +25,7 @@ export EDGE_HTTP_PORT=$(free_port)
 export KAFKA_HOST_PORT=$(free_port)
 export CLICKHOUSE_HTTP_PORT=$(free_port)
 export CLICKHOUSE_NATIVE_PORT=$(free_port)
+export GRAFANA_PORT=$(free_port)
 
 PROJECT=netstream-e2e
 FAILED=0
@@ -142,6 +143,16 @@ check "nothing is written while the gateway is stopped" "$(ch "SELECT count() FR
 compose start otel-gateway >/dev/null 2>&1
 check "buffered record arrives after the gateway restarts" "$(eventually 90 "ch \"SELECT count() FROM flows\"" 2)" 2
 check "record content survived the outage" "$(ch "SELECT packets FROM flows ORDER BY packets LIMIT 1")" 7
+
+echo "== Grafana"
+grafana() { curl -sS -u admin:netstream-dev "http://127.0.0.1:$GRAFANA_PORT$1"; }
+check "Grafana is healthy" "$(eventually 90 "grafana /api/health | python3 -c 'import sys,json; print(json.load(sys.stdin)[\"database\"])'" ok)" ok
+check "ClickHouse data source works" "$(grafana /api/datasources/uid/netstream-clickhouse/health | python3 -c 'import sys,json; print(json.load(sys.stdin)["status"])')" OK
+check "both dashboards are provisioned" "$(grafana '/api/search?type=dash-db' | python3 -c 'import sys,json; print(",".join(sorted(d["uid"] for d in json.load(sys.stdin))))')" "ns-dns,ns-traffic"
+
+echo "== a large burst is not dropped"
+seeded=$(python3 tools/seed.py --endpoint "http://127.0.0.1:$EDGE_HTTP_PORT" --hosts e2e-burst --minutes 10 --seed 1 | sed -n 's/^seeded \([0-9]*\) records.*/\1/p')
+check "every seeded record is stored" "$(eventually 120 "ch \"SELECT count() FROM otel_logs WHERE ResourceAttributes['host.id'] = 'e2e-burst'\"" "$seeded")" "$seeded"
 
 echo
 if [ $FAILED -eq 0 ]; then echo "RESULT: OK"; else echo "RESULT: FAILED"; fi

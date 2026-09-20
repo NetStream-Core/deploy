@@ -12,8 +12,8 @@ processors:
     limit_mib: 192
     spike_limit_mib: 48
   batch:
-    send_batch_size: 4096
-    send_batch_max_size: 8192
+    send_batch_size: 1024
+    send_batch_max_size: 1024
     timeout: 1s
 
 exporters:
@@ -26,6 +26,9 @@ exporters:
     metrics:
       topic: netstream.metrics.v1
       encoding: otlp_proto
+    producer:
+      max_message_bytes: 4194304
+      compression: zstd
     sending_queue:
       enabled: true
       queue_size: 5000
