@@ -14,6 +14,7 @@ declare -A param=(
     [timing]=4
     [qtype]=mixed
     [keep]=0
+    [flood]=0
 )
 for argument in "$@"; do
     param[${argument%%=*}]=${argument#*=}
@@ -42,10 +43,14 @@ case $scenario in
     syn_flood)
         label=syn_flood
         tool=hping3
-        interval=$((1000000 / param[rate]))
         keep=""
         [ "${param[keep]}" = "1" ] && keep="--keep"
-        command="timeout ${param[duration]} hping3 -S -p ${param[port]} -i u$interval $keep $victim_ip >/dev/null 2>&1 || true"
+        if [ "${param[flood]}" = "1" ]; then
+            pace="--flood"
+        else
+            pace="-i u$((1000000 / param[rate]))"
+        fi
+        command="timeout -s INT ${param[duration]} hping3 -S -p ${param[port]} $pace $keep $victim_ip 2>&1 | grep -o '[0-9]* packets transmitted' || true"
         ;;
     port_scan)
         label=port_scan
@@ -69,12 +74,15 @@ case $scenario in
 esac
 
 run_id=$(cat /proc/sys/kernel/random/uuid)
-params_json=$(python3 -c 'import json,sys; print(json.dumps(dict(a.split("=", 1) for a in sys.argv[1:])))' "$@")
 
-echo "run $run_id: $scenario ${params_json}"
+echo "run $run_id: $scenario $*"
 start=$(now_ms)
-compose exec -T attacker sh -c "$command"
+output=$(compose exec -T attacker sh -c "$command")
 end=$(now_ms)
+echo "$output"
+
+sent=$(echo "$output" | sed -n 's/^sent \([0-9]*\) queries$/\1/p; s/^\([0-9]*\) packets transmitted.*/\1/p' | head -1)
+params_json=$(python3 -c 'import json,sys; p = dict(a.split("=", 1) for a in sys.argv[2:]); s = sys.argv[1]; s and p.update(sent=int(s)); print(json.dumps(p))' "$sent" "$@")
 
 clickhouse --query "INSERT INTO labels (run_id, scenario, label, tool, params, attacker_ip, victim_ip, start_ts, end_ts) VALUES ('$run_id', '$scenario', '$label', '$tool', '$(echo "$params_json" | sed "s/'/\\\\'/g")', '$attacker_ip', '$victim_ip', fromUnixTimestamp64Milli($start), fromUnixTimestamp64Milli($end))"
 echo "labelled $(( (end - start) / 1000 )) s window as $label"

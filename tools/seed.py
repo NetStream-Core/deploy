@@ -45,6 +45,7 @@ def flow(ts_ns, direction, transport, src, dst, sport, dport, packets, bytes_per
         "netstream.flow.tcp.synack": synack,
         "netstream.flow.tcp.fin": fin,
         "netstream.flow.tcp.rst": rst,
+        "netstream.flow.aggregated": 0,
     })
 
 
