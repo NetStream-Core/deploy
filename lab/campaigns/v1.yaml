@@ -1,0 +1,91 @@
+name: v1
+gap_seconds: 20
+warmup_seconds: 25
+
+runs:
+  - scenario: benign
+    params: {duration: 60}
+    repeat: 3
+
+  - scenario: syn_flood
+    params: {duration: 20, rate: 200}
+  - scenario: syn_flood
+    params: {duration: 20, rate: 1000}
+  - scenario: syn_flood
+    params: {duration: 20, rate: 5000}
+  - scenario: syn_flood
+    params: {duration: 15, flood: 1}
+
+  - scenario: udp_flood
+    params: {duration: 20, rate: 200}
+  - scenario: udp_flood
+    params: {duration: 20, rate: 1000}
+  - scenario: udp_flood
+    params: {duration: 15, flood: 1}
+
+  - scenario: icmp_flood
+    params: {duration: 20, rate: 200}
+  - scenario: icmp_flood
+    params: {duration: 15, flood: 1}
+
+  - scenario: port_scan
+    params: {duration: 30, ports: "1-1024", rate: 50}
+  - scenario: port_scan
+    params: {duration: 15, ports: "1-1024", rate: 500}
+  - scenario: port_scan
+    params: {duration: 8, ports: "1-3000", rate: 1000}
+  - scenario: slow_scan
+    params: {rate: 2}
+    repeat: 2
+
+  - scenario: slowloris
+    params: {duration: 30, conns: 100, rate: 25}
+  - scenario: slowloris
+    params: {duration: 30, conns: 300, rate: 75}
+
+  - scenario: dns_tunnel
+    params: {duration: 25, rate: 10, qtype: TXT}
+  - scenario: dns_tunnel
+    params: {duration: 25, rate: 40, qtype: "NULL"}
+  - scenario: dns_tunnel
+    params: {duration: 25, rate: 20, qtype: mixed}
+  - scenario: iodine_tunnel
+    params: {duration: 20}
+  - scenario: iodine_tunnel
+    params: {duration: 20}
+
+  - scenario: c2_beacon
+    params: {duration: 30, rate: 1}
+  - scenario: c2_beacon
+    params: {duration: 20, rate: 5}
+
+  - scenario: bulk_download
+    params: {duration: 15, rate: 50}
+    repeat: 2
+  - scenario: udp_stream
+    params: {duration: 15, rate: 5}
+    repeat: 2
+  - scenario: video_stream
+    params: {duration: 15, rate: 2000}
+    repeat: 2
+  - scenario: web_burst
+    params: {duration: 10, conns: 50}
+    repeat: 2
+  - scenario: ssh_session
+    params: {duration: 15}
+    repeat: 2
+  - scenario: backup
+    params: {duration: 10}
+    repeat: 2
+  - scenario: cdn_dns
+    params: {duration: 15, rate: 20}
+    repeat: 2
+  - scenario: dkim_dns
+    params: {duration: 15, rate: 20}
+    repeat: 2
+  - scenario: reputation_dns
+    params: {duration: 15, rate: 20}
+    repeat: 2
+  - scenario: admin_scan
+    params: {ports: "1-1024", rate: 200}
+    repeat: 2

@@ -34,6 +34,7 @@ lab-agent AGENT_DIR="../agent":
     mkdir -p lab/gateway/artifacts
     cp {{AGENT_DIR}}/target/release/network-monitor-agent lab/gateway/artifacts/
     cp {{AGENT_DIR}}/bpf/prog.bpf.o lab/gateway/artifacts/
+    python3 lab/build_info.py {{AGENT_DIR}} lab/gateway/artifacts/build_info.json
 
 lab-up:
     docker compose -f compose.yml -f lab/compose.lab.yml up -d --build kafka kafka-init clickhouse migrate otel-edge otel-gateway gateway victim tunnel attacker client
@@ -52,3 +53,6 @@ lab-scenarios:
 
 lab-e2e:
     ./tests/lab/run.sh
+
+lab-campaign FILE="lab/campaigns/v1.yaml" *ARGS:
+    python3 lab/campaign.py {{FILE}} {{ARGS}}
