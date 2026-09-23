@@ -46,6 +46,15 @@ def flow(ts_ns, direction, transport, src, dst, sport, dport, packets, bytes_per
         "netstream.flow.tcp.fin": fin,
         "netstream.flow.tcp.rst": rst,
         "netstream.flow.aggregated": 0,
+        "netstream.flow.size.le64": packets if bytes_per_packet <= 64 else 0,
+        "netstream.flow.size.le128": packets if 64 < bytes_per_packet <= 128 else 0,
+        "netstream.flow.size.le256": packets if 128 < bytes_per_packet <= 256 else 0,
+        "netstream.flow.size.le512": packets if 256 < bytes_per_packet <= 512 else 0,
+        "netstream.flow.size.le1024": packets if 512 < bytes_per_packet <= 1024 else 0,
+        "netstream.flow.size.gt1024": packets if bytes_per_packet > 1024 else 0,
+        "netstream.flow.iat.count": max(packets - 1, 0),
+        "netstream.flow.iat.sum_us": INTERVAL_S * 1000000 if packets > 1 else 0,
+        "netstream.flow.iat.sumsq_us": (INTERVAL_S * 1000000 // max(packets, 1)) ** 2 * max(packets - 1, 0),
     })
 
 

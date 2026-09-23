@@ -44,12 +44,32 @@ services:
         ipv4_address: 10.20.0.10
     mem_limit: 150m
 
+  tunnel:
+    build:
+      context: ./lab/tunnel
+    image: netstream-lab-tunnel
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      ROUTE_TO: 10.10.0.0/24
+      GATEWAY: 10.20.0.2
+      TUNNEL_PASSWORD: lab-secret
+      TUNNEL_DOMAIN: t.tunnel.test
+    networks:
+      dmz:
+        ipv4_address: 10.20.0.20
+    mem_limit: 150m
+
   attacker:
     build:
       context: ./lab/tools
     image: netstream-lab-tools
     cap_add:
       - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
     command: ["sleep", "infinity"]
     environment:
       ROUTE_TO: 10.20.0.0/24
