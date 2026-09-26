@@ -63,7 +63,17 @@ just reset     # остановить и удалить данные
 |---|---|
 | `service.name` | `netstream-monitor-agent` |
 | `host.id` | идентификатор сенсора |
+| `service.instance.id` | случайный `boot_id`, новый при каждом перезапуске агента (колонка `boot_id`) |
 | `network.interface.name` | `eth0` |
+
+**Идентичность события** (есть у `netstream.flow`, `netstream.dns.query`, `netstream.blocklist.hit`)
+
+| Атрибут | Тип | Колонка |
+|---|---|---|
+| `netstream.event.sequence` | int, монотонный счётчик от 0 в пределах одного `boot_id` | `event_sequence` |
+| `netstream.event.id` | `"{boot_id}-{sequence}"`, уникален за всю историю сенсора | `event_id` |
+
+`event_id`/`event_sequence` позволяют отличить повтор события (Kafka retry, повторная доставка) от нового события и понять, что перед этой записью агент перезапускался (`boot_id` сменился, `event_sequence` начался заново с 0). `ts` в типизированных таблицах — это `event_time`: когда агент сформировал запись (для потока — конец интервала съёма, а не момент конкретного пакета). `ingest_time` — отдельная колонка, момент вставки строки в `otel_logs` (`DEFAULT now()`, не приходит от агента) — разница `ingest_time - ts` и есть задержка доставки телеметрии, отдельная от задержки детектирования.
 
 **`netstream.flow`**: дельта по потоку за интервал
 
