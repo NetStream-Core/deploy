@@ -31,6 +31,8 @@ just reset     # остановить и удалить данные
 
 Порты открыты только на `127.0.0.1` и переопределяются через `.env` (см. `.env.example`): `EDGE_GRPC_PORT`, `EDGE_HTTP_PORT`, `KAFKA_HOST_PORT`, `CLICKHOUSE_HTTP_PORT`, `CLICKHOUSE_NATIVE_PORT`, `GRAFANA_PORT`. Учётные данные ClickHouse по умолчанию (`netstream` / `netstream-dev`) предназначены только для локальной разработки.
 
+Помимо суперпользователя `netstream` (нужен `migrate` для DDL и collector'ам для записи), миграция `013_read_only_role.sql` заводит роль `netstream_reader` (`SELECT` на `netstream.*` и на `system.tables`/`system.columns` для автодополнения) и пользователя `netstream_ro` / `netstream-ro-dev`. Grafana ходит в ClickHouse именно под ним (см. `grafana/provisioning/datasources/clickhouse.yml`) — панель не может ничего испортить, даже если кто-то допишет `INSERT`/`DROP` в `rawSql`. Пароль зашит в саму миграцию (`migrate.sh` не подставляет переменные окружения в `.sql`-файлы), поэтому `CLICKHOUSE_RO_USER`/`CLICKHOUSE_RO_PASSWORD` в `compose.yml` не читаются из `.env` — меняются оба места разом, если понадобится сменить пароль. Тому же аккаунту стоит пользоваться и `ml` (`netstream-ml data export --user netstream_ro --password netstream-ro-dev ...`), поскольку он только читает.
+
 Агент направляется на `http://127.0.0.1:4317` (по умолчанию так и есть, см. `OTEL_EXPORTER_OTLP_ENDPOINT`).
 
 ## Миграции

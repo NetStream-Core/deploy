@@ -11,6 +11,13 @@ x-clickhouse-env: &clickhouse-env
   CLICKHOUSE_USER: ${CLICKHOUSE_USER:-netstream}
   CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-netstream-dev}
 
+x-clickhouse-ro-env: &clickhouse-ro-env
+  # Not overridable via .env: the password is a literal in
+  # clickhouse/migrations/013_read_only_role.sql, which migrate.sh applies
+  # as-is (no variable substitution). Change both together if you rotate it.
+  CLICKHOUSE_RO_USER: netstream_ro
+  CLICKHOUSE_RO_PASSWORD: netstream-ro-dev
+
 services:
   kafka:
     image: confluentinc/cp-kafka:7.9.10
@@ -143,7 +150,7 @@ services:
     ports:
       - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
     environment:
-      <<: *clickhouse-env
+      <<: [*clickhouse-env, *clickhouse-ro-env]
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-netstream-dev}
       GF_PLUGINS_PREINSTALL_SYNC: grafana-clickhouse-datasource@4.21.3
