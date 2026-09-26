@@ -5,7 +5,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY artifacts/network-monitor-agent /usr/local/bin/network-monitor-agent
-COPY artifacts/prog.bpf.o /usr/local/lib/netstream/prog.bpf.o
+COPY artifacts/public_suffix_list.dat /etc/netstream/public_suffix_list.dat
 COPY entrypoint.sh /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
