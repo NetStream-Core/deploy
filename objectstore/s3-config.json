@@ -1,0 +1,18 @@
+{
+  "identities": [
+    {
+      "name": "netstream",
+      "credentials": [
+        {
+          "accessKey": "netstream",
+          "secretKey": "netstream-dev"
+        }
+      ],
+      "actions": [
+        "Admin",
+        "Read",
+        "Write"
+      ]
+    }
+  ]
+}

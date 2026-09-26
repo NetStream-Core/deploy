@@ -16,6 +16,9 @@ agent --OTLP--> otel-edge --> Kafka --> otel-gateway --> ClickHouse
 | `migrate` | `clickhouse/clickhouse-server:25.8` | Применяет миграции из `clickhouse/migrations` |
 | `grafana` | `grafana/grafana:12.4.11` | Дашборды поверх ClickHouse (плагин `grafana-clickhouse-datasource` 4.21.3, ставится при первом запуске) |
 | `kafka-ui` | `provectuslabs/kafka-ui:v0.7.2` | Отладка, только с `--profile debug` |
+| `objectstore` | `chrislusf/seaweedfs:latest` | S3-совместимое объектное хранилище для артефактов моделей (`backend`); S3 API на порту 8333 |
+
+`objectstore` — SeaweedFS, а не MinIO: официальный образ `minio/minio` с 2025 года требует `docker login` даже для анонимного pull (включая старые теги), что делает его непригодным для CI и для `docker compose up` без предварительной настройки учётной записи. SeaweedFS даёт тот же S3 API (клиент — `minio-go`, он работает с любым S3-совместимым сервером, не только с MinIO) без этого ограничения. Доступ — статический ключ в `objectstore/s3-config.json` (`netstream`/`netstream-dev`, как и остальные dev-учётки в этом репозитории), бакет `netstream-models` создаётся автоматически при первой загрузке.
 
 ## Запуск
 
