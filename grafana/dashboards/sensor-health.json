@@ -1,0 +1,478 @@
+{
+  "uid": "ns-sensor-health",
+  "title": "NetStream / Sensor health",
+  "description": "Накладные расходы и работоспособность самого агента: память, загрузка таблицы потоков, время выполнения BPF-программ, потери в кольцевых буферах.",
+  "tags": [
+    "netstream",
+    "sensor-health"
+  ],
+  "schemaVersion": 41,
+  "version": 1,
+  "editable": false,
+  "graphTooltip": 1,
+  "timezone": "browser",
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "host",
+        "label": "Sensor",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "netstream-clickhouse"
+        },
+        "query": "SELECT DISTINCT host_id FROM agent_metrics WHERE $__timeFilter(ts) ORDER BY host_id",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        }
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Sensors reporting",
+      "description": "",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "netstream-clickhouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "netstream-clickhouse"
+          },
+          "editorType": "sql",
+          "format": 1,
+          "queryType": "table",
+          "rawSql": "SELECT uniqExact(host_id) FROM agent_metrics WHERE $__timeFilter(ts) AND host_id IN (${host:singlequote})",
+          "pluginVersion": "4.21.3"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Avg memory RSS",
+      "description": "Среднее по сенсорам последнее значение netstream_agent_memory_rss_bytes в окне.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "netstream-clickhouse"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "netstream-clickhouse"
+          },
+          "editorType": "sql",
+          "format": 1,
+          "queryType": "table",
+          "rawSql": "SELECT avg(value) FROM (SELECT host_id, argMax(value, ts) AS value FROM agent_metrics WHERE $__timeFilter(ts) AND metric_name = 'netstream_agent_memory_rss_bytes' AND host_id IN (${host:singlequote}) GROUP BY host_id)",
+          "pluginVersion": "4.21.3"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Max flow table utilization",
+      "description": "Худший по сенсорам процент занятости таблицы потоков (netstream_flow_active / netstream_flow_table_entries) на конец окна.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "netstream-clickhouse"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "netstream-clickhouse"
+          },
+          "editorType": "sql",
+          "format": 1,
+          "queryType": "table",
+          "rawSql": "SELECT max(active / entries) * 100 FROM (SELECT host_id, argMaxIf(value, ts, metric_name = 'netstream_flow_active') AS active, argMaxIf(value, ts, metric_name = 'netstream_flow_table_entries') AS entries FROM agent_metrics WHERE $__timeFilter(ts) AND host_id IN (${host:singlequote}) GROUP BY host_id) WHERE entries > 0",
+          "pluginVersion": "4.21.3"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Memory RSS by sensor",
+      "description": "",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "netstream-clickhouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "netstream-clickhouse"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT $__timeInterval(ts) AS time, host_id, avg(value) AS bytes FROM agent_metrics WHERE metric_name = 'netstream_agent_memory_rss_bytes' AND $__timeFilter(ts) AND host_id IN (${host:singlequote}) GROUP BY time, host_id ORDER BY time",
+          "pluginVersion": "4.21.3"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 15,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "interval": "1m"
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Flow table utilization %",
+      "description": "netstream_flow_active / netstream_flow_table_entries по сенсору.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "netstream-clickhouse"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "netstream-clickhouse"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT $__timeInterval(ts) AS time, host_id, avgIf(value, metric_name = 'netstream_flow_active') / avgIf(value, metric_name = 'netstream_flow_table_entries') * 100 AS pct FROM agent_metrics WHERE metric_name IN ('netstream_flow_active', 'netstream_flow_table_entries') AND $__timeFilter(ts) AND host_id IN (${host:singlequote}) GROUP BY time, host_id ORDER BY time",
+          "pluginVersion": "4.21.3"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "max": 100,
+          "min": 0,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 15,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "interval": "1m"
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "BPF program time (ns of CPU per second)",
+      "description": "Прирост netstream_bpf_run_time_ns_total за интервал, делённый на длину интервала — приблизительная нагрузка XDP/TC-программ на CPU.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "netstream-clickhouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "netstream-clickhouse"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT $__timeInterval(ts) AS time, host_id, (max(value) - min(value)) / ($__interval_ms / 1000) AS ns_per_sec FROM agent_metrics WHERE metric_name = 'netstream_bpf_run_time_ns_total' AND $__timeFilter(ts) AND host_id IN (${host:singlequote}) GROUP BY time, host_id ORDER BY time",
+          "pluginVersion": "4.21.3"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 15,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "interval": "1m"
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Drops per second",
+      "description": "Прирост netstream_dns_events_lost_total и netstream_flow_overflow_packets_total за интервал — переполнение кольцевого буфера DNS и превышение бюджета новых потоков.",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "netstream-clickhouse"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "netstream-clickhouse"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "queryType": "timeseries",
+          "rawSql": "SELECT $__timeInterval(ts) AS time, host_id, metric_name, (max(value) - min(value)) / ($__interval_ms / 1000) AS per_sec FROM agent_metrics WHERE metric_name IN ('netstream_dns_events_lost_total', 'netstream_flow_overflow_packets_total') AND $__timeFilter(ts) AND host_id IN (${host:singlequote}) GROUP BY time, host_id, metric_name ORDER BY time",
+          "pluginVersion": "4.21.3"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 15,
+            "showPoints": "never"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "interval": "1m"
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "Sensor metrics freshness",
+      "description": "Когда каждый сенсор последний раз присылал метрики (отдельно от потоков — ловит поломку именно телеметрии агента).",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "netstream-clickhouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 24,
+        "h": 6
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "netstream-clickhouse"
+          },
+          "editorType": "sql",
+          "format": 1,
+          "queryType": "table",
+          "rawSql": "SELECT host_id AS sensor, max(ts) AS last_record, dateDiff('second', max(ts), now()) AS seconds_ago FROM agent_metrics WHERE ts > now() - INTERVAL 1 DAY GROUP BY host_id ORDER BY sensor",
+          "pluginVersion": "4.21.3"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    }
+  ]
+}
