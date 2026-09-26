@@ -33,7 +33,7 @@ demo: up
 lab-agent AGENT_DIR="../agent":
     mkdir -p lab/gateway/artifacts
     cp {{AGENT_DIR}}/target/release/network-monitor-agent lab/gateway/artifacts/
-    cp {{AGENT_DIR}}/bpf/prog.bpf.o lab/gateway/artifacts/
+    cp {{AGENT_DIR}}/public_suffix_list.dat lab/gateway/artifacts/
     python3 lab/build_info.py {{AGENT_DIR}} lab/gateway/artifacts/build_info.json
 
 lab-up:
