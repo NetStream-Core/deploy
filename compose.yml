@@ -179,7 +179,29 @@ services:
     mem_limit: 400m
     logging: *logging
 
+  objectstore:
+    image: chrislusf/seaweedfs:latest
+    command: >
+      server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3-config.json
+      -s3.autoCreateBucket -master.volumeSizeLimitMB=100
+    ports:
+      - "127.0.0.1:${OBJECTSTORE_PORT:-8333}:8333"
+    volumes:
+      - objectstore-data:/data
+      - ./objectstore/s3-config.json:/etc/seaweedfs/s3-config.json:ro
+    healthcheck:
+      # any HTTP response (even 403 for an unsigned request) means the S3
+      # gateway is up; `-f` would treat that 403 as a failed healthcheck
+      test: ["CMD", "curl", "-s", "-o", "/dev/null", "http://localhost:8333"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    mem_limit: 300m
+    logging: *logging
+
 volumes:
   kafka-data:
   clickhouse-data:
   grafana-data:
+  objectstore-data:
