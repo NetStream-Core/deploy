@@ -66,11 +66,12 @@ def entropy(name):
     return -sum(c / total * log2(c / total) for c in counts.values())
 
 
-def dns(ts_ns, client, resolver, qtype, name, unique_subdomains):
+def dns(ts_ns, client, resolver, qtype, name, unique_subdomains, transport="udp"):
     labels = name.split(".")
     characters = name.replace(".", "")
     return record(ts_ns, "netstream.dns.query", 9, {
         "network.io.direction": "receive",
+        "network.transport": transport,
         "source.address": client,
         "destination.address": resolver,
         "dns.question.name": name,

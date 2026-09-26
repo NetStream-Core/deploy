@@ -84,6 +84,7 @@ just reset     # остановить и удалить данные
 | Атрибут | Тип | Колонка |
 |---|---|---|
 | `network.io.direction` | `receive` или `transmit` | `direction` |
+| `network.transport` | `tcp` или `udp` | `transport` |
 | `source.address`, `destination.address` | IPv4 | `src_ip`, `dst_ip` |
 | `dns.question.name` | string, нижний регистр | `qname` |
 | `netstream.dns.question.type` | `A`, `TXT`, `NULL`, `AAAA`, … | `qtype` |
