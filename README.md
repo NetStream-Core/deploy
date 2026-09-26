@@ -44,8 +44,12 @@ just reset     # остановить и удалить данные
 | `dns_queries` | DNS-запросы с признаками | 14 дней |
 | `blocklist_hits` | Срабатывания блоклиста | 90 дней |
 | `flows_1m` | Суммы по минутам (host, направление, транспорт) | 90 дней |
+| `otel_metrics_gauge`, `otel_metrics_sum`, `otel_metrics_histogram` | Сырые метрики агента от collector, промежуточный слой | 3 дня |
+| `agent_metrics` | Метрики накладных расходов агента (`netstream_*`), объединены gauge и sum | 30 дней |
 
-Типизированные таблицы заполняются materialized views из `otel_logs` по полю `EventName`.
+Типизированные таблицы заполняются materialized views из `otel_logs` по полю `EventName`; `agent_metrics` — из `otel_metrics_gauge`/`otel_metrics_sum` по `MetricName`. Схема `otel_metrics_*` и `otel_logs` продиктована экспортёром `clickhouseexporter` (`create_schema: false` — таблицы должны существовать и совпадать по колонкам заранее, экспортёр их не создаёт).
+
+Дашборд Grafana «NetStream / Sensor health» строится на `agent_metrics`: память, загрузка таблицы потоков, время выполнения BPF-программ, потери в DNS ring buffer и переполнения бюджета новых потоков — отдельно от дашбордов трафика, поэтому ловит поломку самой телеметрии агента (сенсор жив и шлёт потоки, но метрики перестали доходить, или наоборот).
 
 ## Контракт событий
 
