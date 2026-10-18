@@ -64,7 +64,7 @@ services:
       - -c
       - |
         set -e
-        for topic in netstream.events.v1 netstream.metrics.v1; do
+        for topic in netstream.events.v1 netstream.metrics.v1 netstream.detections.v1; do
           kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists \
             --topic "$$topic" --partitions 3 --replication-factor 1 \
             --config retention.ms=604800000 --config max.message.bytes=4194304

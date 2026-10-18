@@ -239,3 +239,31 @@ CI (`.github/workflows/ci.yaml`) на каждый PR прогоняет `yamlli
 - Один брокер Kafka без репликации, без TLS и аутентификации: конфигурация для разработки и стенда.
 - Метрики агента попадают в топик `netstream.metrics.v1`, но потребителя у него пока нет.
 - Очередь отправки в edge-collector хранится в памяти: при его перезапуске непереданные данные теряются.
+
+## Топик `netstream.detections.v1`
+
+Третий топик, создаваемый `kafka-init` рядом с `netstream.events.v1` и `netstream.metrics.v1`. Пишет в него онлайн-детектор (`ml/ml-online-detector`, `netstream_ml.detector`, см. его README, раздел «Онлайн-детектор (M16)»): отдельный процесс со своей consumer group, который читает тот же `netstream.events.v1`, что и `otel-gateway` для заполнения ClickHouse, независимо от него, и публикует результат оценки каждого закрывшегося окна признаков. Потребителя у топика пока нет — тот же честный пробел, что и у `netstream.metrics.v1` выше: сейчас это витрина для `kafka-ui`/ручной проверки, подключение к Grafana или алертингу — отдельная задача.
+
+Каждое сообщение — JSON-объект (не OTLP, в отличие от `netstream.events.v1`/`netstream.metrics.v1`):
+
+```json
+{
+    "host_id": "sensor-1",
+    "src_ip": "10.0.0.5",
+    "window_start": 1700000000,
+    "window_seconds": 5,
+    "score": 11.5,
+    "is_attack": true,
+    "latency_ms": 842.3
+}
+```
+
+| Поле | Тип | Значение |
+|---|---|---|
+| `host_id` | string | сенсор, чей `WindowAccumulator` закрыл окно (`host.id` из resource-атрибутов `netstream.events.v1`) |
+| `src_ip` | string | источник, к которому относится окно |
+| `window_start` | int | unix-время (секунды) начала окна |
+| `window_seconds` | int | длина окна |
+| `score` | float | `decision_score` модели; не нормализовано и не сравнимо между разными моделями (детали — в README `ml-online-detector`) |
+| `is_attack` | bool | решение модели |
+| `latency_ms` | float | время между теоретическим концом окна (`window_start + window_seconds`) и моментом оценки; может быть отрицательным при принудительном `flush()` до конца окна — это ожидаемо, см. README `ml-online-detector` |
