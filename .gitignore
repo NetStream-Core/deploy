@@ -2,3 +2,4 @@
 __pycache__/
 lab/campaigns/manifests/
 *.pyc
+/certs/
