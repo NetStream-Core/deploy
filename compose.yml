@@ -101,6 +101,8 @@ services:
     depends_on:
       clickhouse:
         condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
     restart: "no"
     entrypoint: ["/bin/sh", "/migrate.sh"]
     environment:
