@@ -36,6 +36,10 @@ jobs:
             otel/opentelemetry-collector-contrib:0.161.0 validate --config /cfg.yaml
 
       - run: |
+          docker run --rm -v "$PWD/collector/edge-tls.yaml:/cfg.yaml:ro" \
+            otel/opentelemetry-collector-contrib:0.161.0 validate --config /cfg.yaml
+
+      - run: |
           docker run --rm -v "$PWD/collector/gateway.yaml:/cfg.yaml:ro" \
             -e CLICKHOUSE_DB=x -e CLICKHOUSE_USER=x -e CLICKHOUSE_PASSWORD=x \
             otel/opentelemetry-collector-contrib:0.161.0 validate --config /cfg.yaml
