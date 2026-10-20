@@ -26,6 +26,17 @@ exporters:
     metrics:
       topic: netstream.metrics.v1
       encoding: otlp_proto
+    # Without this, logs are partitioned round-robin: two records from the
+    # same sensor (host.id) can land on different partitions, where Kafka
+    # gives no ordering guarantee at all between them — breaking
+    # ml-online-detector's WindowAccumulator, which assumes a later
+    # same-source record closes a window and so needs same-sensor records
+    # to arrive in order. Hashing by resource attributes keeps one
+    # sensor's records on one partition for the life of its process
+    # (service.instance.id — the agent's boot_id — is part of the
+    # resource, so a restart can land on a different partition; that's a
+    # natural ordering break point anyway, not a new one).
+    partition_logs_by_resource_attributes: true
     producer:
       max_message_bytes: 4194304
       compression: zstd

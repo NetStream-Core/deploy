@@ -32,6 +32,9 @@ exporters:
     metrics:
       topic: netstream.metrics.v1
       encoding: otlp_proto
+    # See edge.yaml's comment on the same setting — kept in sync between
+    # the two files like the rest of this one (README, "TLS").
+    partition_logs_by_resource_attributes: true
     producer:
       max_message_bytes: 4194304
       compression: zstd
