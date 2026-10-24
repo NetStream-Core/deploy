@@ -48,6 +48,12 @@ lab-run *ARGS:
 e2e:
     ./tests/e2e/run.sh
 
+e2e-detect:
+    ./tests/e2e/detection.sh
+
+migrations-test:
+    ./tests/clickhouse/migrations.sh
+
 lab-scenarios:
     ./tests/lab/scenarios.sh
 

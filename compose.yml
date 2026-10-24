@@ -183,7 +183,11 @@ services:
     logging: *logging
 
   objectstore:
-    image: chrislusf/seaweedfs:latest
+    # Pinned by digest, not `:latest` — a floating tag means a routine
+    # `docker compose pull` can silently swap the running binary under this
+    # service with no diff to review. Resolved from `:latest` on 2026-10-24
+    # (SeaweedFS 4.48, commit 530be3e37).
+    image: chrislusf/seaweedfs@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
     command: >
       server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3-config.json
       -s3.autoCreateBucket -master.volumeSizeLimitMB=100
