@@ -71,7 +71,9 @@ jobs:
       - uses: actions/checkout@v7
         with:
           repository: NetStream-Core/ml
-          path: ../ml
+          path: ml
+
+      - run: ln -s "$PWD/ml" "$PWD/../ml"
 
       - uses: astral-sh/setup-uv@v5
         with:
