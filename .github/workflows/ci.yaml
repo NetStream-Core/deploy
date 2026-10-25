@@ -43,3 +43,40 @@ jobs:
           docker run --rm -v "$PWD/collector/gateway.yaml:/cfg.yaml:ro" \
             -e CLICKHOUSE_DB=x -e CLICKHOUSE_USER=x -e CLICKHOUSE_PASSWORD=x \
             otel/opentelemetry-collector-contrib:0.161.0 validate --config /cfg.yaml
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v7
+
+      - run: cp .env.example .env
+
+      - run: ./tests/e2e/run.sh
+
+  migrations-test:
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v7
+
+      - run: ./tests/clickhouse/migrations.sh
+
+  e2e-detect:
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/checkout@v7
+        with:
+          repository: NetStream-Core/ml
+          path: ../ml
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - run: cp .env.example .env
+
+      - run: ./tests/e2e/detection.sh
