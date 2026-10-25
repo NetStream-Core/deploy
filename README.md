@@ -334,3 +334,24 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 365 \
 ```
 
 Пока без собственного потребителя в этом стеке — ни Grafana, ни ClickHouse на него не подписаны: оператор смотрит открытые инциденты через `GET /api/v1/incidents` backend'а, а этот топик существует для будущего потребителя (нотификации, вебхук), которому не нужно вычитывать весь `netstream.detections.v1` и повторять дедупликацию по инцидентам самостоятельно.
+
+## MLflow
+
+Опциональный сервис (`profiles: [mlflow]` — не поднимается `just up`, только `docker compose --profile mlflow up -d mlflow`), для `ml`'s `netstream-ml baseline`/`evaluate` (см. `ml/docs/experiments.md`, раздел «Отслеживание экспериментов»), которые по умолчанию трекаются в локальный `./mlruns` рядом с `ml` и ничего общего с этим сервисом не имеют, пока на него явно не указать.
+
+```bash
+docker compose --profile mlflow up -d objectstore mlflow
+```
+
+Хранилище метаданных (параметры/метрики/история запусков) — SQLite-файл на томе `mlflow-data`, не Postgres: трекинг экспериментов — это состояние для одного пользователя на лабораторном стенде, а не что-то, что нужно реплицировать или держать высокодоступным (тот же принцип, что и у `docs/architecture/system.md`'s «Дальше» для production-кластеризации). Хранилище артефактов (JSON-отчёты `baseline`/`evaluate`, прикреплённые к запуску) — тот же S3-совместимый `objectstore`, что и у реестра моделей backend, бакет `netstream-mlflow` (создаётся автоматически, как и `netstream-models` у backend).
+
+Образ (`ghcr.io/mlflow/mlflow`) не включает `boto3`, нужный для S3-хранилища артефактов — команда сервиса ставит его при старте (`pip install boto3`, не часть образа), а не держит отдельный Dockerfile для одной зависимости.
+
+`ml` должен указывать не только `MLFLOW_TRACKING_URI`, но и `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`MLFLOW_S3_ENDPOINT_URL` — MLflow-клиент грузит артефакты в S3 напрямую, а не через сервер, так что без них реально улетят только параметры и метрики, а `log_artifact` будет падать на «Unable to locate credentials» (поймано, не ломает команду, см. `ml/docs/experiments.md`):
+
+```bash
+MLFLOW_TRACKING_URI=http://localhost:${MLFLOW_PORT:-5000} \
+AWS_ACCESS_KEY_ID=netstream AWS_SECRET_ACCESS_KEY=netstream-dev \
+MLFLOW_S3_ENDPOINT_URL=http://localhost:${OBJECTSTORE_PORT:-8333} \
+uv run --project ../ml netstream-ml baseline gradient-boosting data/v1 --window 5
+```

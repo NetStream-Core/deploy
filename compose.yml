@@ -219,9 +219,34 @@ services:
     mem_limit: 300m
     logging: *logging
 
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v3.6.0
+    profiles: [mlflow]
+    depends_on:
+      objectstore:
+        condition: service_healthy
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        pip install --no-cache-dir boto3 >/dev/null &&
+        mlflow server --host 0.0.0.0 --port 5000 \
+            --backend-store-uri sqlite:////mlflow/data/mlflow.db \
+            --default-artifact-root s3://netstream-mlflow/
+    environment:
+      AWS_ACCESS_KEY_ID: netstream
+      AWS_SECRET_ACCESS_KEY: netstream-dev
+      MLFLOW_S3_ENDPOINT_URL: http://objectstore:8333
+    ports:
+      - "127.0.0.1:${MLFLOW_PORT:-5000}:5000"
+    volumes:
+      - mlflow-data:/mlflow/data
+    mem_limit: 400m
+    logging: *logging
+
 volumes:
   kafka-data:
   clickhouse-data:
   grafana-data:
   objectstore-data:
   edge-queue:
+  mlflow-data:
