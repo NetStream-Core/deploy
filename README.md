@@ -239,6 +239,8 @@ just lab-campaign lab/campaigns/v1.yaml
 
 Манифест уходит в `lab/campaigns/manifests/<кампания>-<время>.json` (не в git). По умолчанию оркестратор поднимает и останавливает лабораторию сам; `--skip-up` и `--skip-down` дают собрать несколько кампаний подряд без пересоздания стека. `--gap-seconds` переопределяет паузу между запусками из файла.
 
+`v2-intensity-bias.yaml` — не замена `v1.yaml`, а дополняющая кампания с повторами (3–4 на комбинацию сценарий+`rate`) именно там, где `v1.yaml` даёт 1–2 запуска: `syn_flood`/`port_scan` на нескольких `rate`, `dns_tunnel` на нескольких `rate`, и отдельно `iodine_tunnel` — ровно то, что нужно `ml`'s `evaluate intensity` (M9) и сравнению `dns_tunnel` vs `iodine_tunnel` (M11, см. `ml/docs/experiments.md`) для статистически устойчивых отложенных групп, а не 2–18-строчных остатков.
+
 ## Тесты
 
 ```bash

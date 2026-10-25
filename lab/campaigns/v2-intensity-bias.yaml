@@ -1,0 +1,36 @@
+name: v2-intensity-bias
+gap_seconds: 20
+warmup_seconds: 25
+
+runs:
+  - scenario: benign
+    params: {duration: 60}
+    repeat: 3
+
+  - scenario: syn_flood
+    params: {duration: 15, rate: 200}
+    repeat: 4
+  - scenario: syn_flood
+    params: {duration: 15, rate: 1000}
+    repeat: 4
+  - scenario: syn_flood
+    params: {duration: 15, rate: 5000}
+    repeat: 4
+
+  - scenario: port_scan
+    params: {duration: 15, ports: "1-1024", rate: 50}
+    repeat: 4
+  - scenario: port_scan
+    params: {duration: 10, ports: "1-1024", rate: 500}
+    repeat: 4
+
+  - scenario: dns_tunnel
+    params: {duration: 20, rate: 10, qtype: TXT}
+    repeat: 4
+  - scenario: dns_tunnel
+    params: {duration: 20, rate: 40, qtype: "NULL"}
+    repeat: 4
+
+  - scenario: iodine_tunnel
+    params: {duration: 20}
+    repeat: 4
