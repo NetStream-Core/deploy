@@ -12,6 +12,13 @@ receivers:
           cert_file: /certs/tls.crt
           key_file: /certs/tls.key
 
+extensions:
+  # See edge.yaml's comment on the same extension.
+  file_storage:
+    directory: /var/lib/otelcol/file_storage
+    create_directory: true
+    timeout: 1s
+
 processors:
   memory_limiter:
     check_interval: 1s
@@ -41,6 +48,7 @@ exporters:
     sending_queue:
       enabled: true
       queue_size: 5000
+      storage: file_storage
     retry_on_failure:
       enabled: true
       initial_interval: 1s
@@ -48,6 +56,7 @@ exporters:
       max_elapsed_time: 300s
 
 service:
+  extensions: [file_storage]
   telemetry:
     logs:
       level: info

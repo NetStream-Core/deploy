@@ -6,6 +6,18 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
+extensions:
+  # Backs the kafka exporter's sending_queue with files on disk instead of
+  # only this process's memory — without it, a batch still sitting in the
+  # queue when the container restarts (crash, redeploy, OOM) is just gone;
+  # same records at best re-sent by the agent on its own retry timers, at
+  # worst never recovered. The mounted volume (see compose.yml) is what
+  # actually makes this survive a restart, not the extension by itself.
+  file_storage:
+    directory: /var/lib/otelcol/file_storage
+    create_directory: true
+    timeout: 1s
+
 processors:
   memory_limiter:
     check_interval: 1s
@@ -43,6 +55,7 @@ exporters:
     sending_queue:
       enabled: true
       queue_size: 5000
+      storage: file_storage
     retry_on_failure:
       enabled: true
       initial_interval: 1s
@@ -50,6 +63,7 @@ exporters:
       max_elapsed_time: 300s
 
 service:
+  extensions: [file_storage]
   telemetry:
     logs:
       level: info

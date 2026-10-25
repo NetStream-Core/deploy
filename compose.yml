@@ -113,11 +113,30 @@ services:
       - ./clickhouse/migrations:/migrations:ro
     logging: *logging
 
+  # otel-edge runs as uid:gid 10001:10001 (baked into the image, not
+  # configurable here), but a freshly created named volume is owned by
+  # root — otel-edge's kafka exporter fails to start ("permission
+  # denied") trying to create its queue file under edge-queue otherwise.
+  # This chowns it once before otel-edge starts; a no-op on later starts.
+  edge-queue-init:
+    # otel-edge's own image has no shell or chown binary (distroless-ish)
+    # — busybox is just for this one chmod/chown step, not for anything
+    # otel-edge itself runs.
+    image: busybox:1.36
+    user: "0:0"
+    entrypoint: ["chown", "-R", "10001:10001", "/var/lib/otelcol/file_storage"]
+    volumes:
+      - edge-queue:/var/lib/otelcol/file_storage
+    restart: "no"
+    logging: *logging
+
   otel-edge:
     image: otel/opentelemetry-collector-contrib:0.161.0
     command: ["--config", "/etc/otelcol/config.yaml"]
     depends_on:
       kafka-init:
+        condition: service_completed_successfully
+      edge-queue-init:
         condition: service_completed_successfully
     ports:
       - "127.0.0.1:${EDGE_GRPC_PORT:-4317}:4317"
@@ -125,6 +144,7 @@ services:
     volumes:
       - ./collector/${EDGE_CONFIG_FILE:-edge.yaml}:/etc/otelcol/config.yaml:ro
       - ./certs:/certs:ro
+      - edge-queue:/var/lib/otelcol/file_storage
     mem_limit: 300m
     logging: *logging
 
@@ -212,3 +232,4 @@ volumes:
   clickhouse-data:
   grafana-data:
   objectstore-data:
+  edge-queue:
